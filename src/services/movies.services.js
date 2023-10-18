@@ -103,8 +103,124 @@ const storeMovie = async (dataMovie, actors) => {
     }
 }
 
+const updateMovie = async (id, dataMovie) => {
+    try {
+        const { title, awards, rating, length, release_date, genre_id, actors } = dataMovie
+        const movie = await db.Movie.findByPk(id, {
+            attributes: ["id", "title", "awards", "rating", "length", "release_date"],
+            incluide: [
+                {
+                    association: 'genre',
+                    attributes: ['id', 'name']
+                },
+                {
+                    association: 'actors',
+                    attributes: ['id', 'first_name', 'last_name'],
+                    through: {
+                        attributes: []
+                    }
+                }
+            ],
+        })
+
+        if (!movie) {
+            throw {
+                status: 400,
+                message: "No hay una película con ese ID"
+            }
+        }
+        movie.title = title?.trim() || movie.title
+        movie.awards = awards || movie.awards
+        movie.rating = rating || movie.rating
+        movie.length = length || movie.length
+        movie.release_date = release_date || movie.release_date
+        movie.genre_id = genre_id || movie.genre_id
+
+        await movie.save()
+
+        if (actors.length) {
+            await db.Actor_Movie.destroy({
+                where: {
+                    movie_id: id
+                }
+            })
+        }
+        const actorsArray = actors.map(actor => {
+            return {
+                movie_id: id,
+                actor_id: actor
+            }
+        })
+        await db.Actor_Movie.bulkCreate(actorsArray, {
+            validate: true
+        })
+
+        await movie.reload()
+        return movie
+
+    } catch (error) {
+        console.log(error);
+        return res.status(error.status || 500).json({
+            ok: false,
+            status: error.status || 500,
+            message: error.message || 'upss, error'
+        })
+    }
+}
+const deleteMovie = async (id) => {
+    try {
+        if (isNaN(id)) {
+            throw {
+                status: 404,
+                message: 'Id corrupto'
+
+            }
+        }
+
+        const movie = await db.Movie.findByPk(id)
+
+        if (!movie) {
+            throw {
+                status: 404,
+                message: 'No hay una peliculas con ese Id'
+            }
+        }
+
+        await db.Actor_Movie.destroy({
+            where: {
+                movie_id: id
+            }
+        })
+
+        await db.Actor.update(
+            {
+                favorite_movie_id: null
+            },
+            {
+                where: {
+                    favorite_movie_id: id
+                }
+            }
+        )
+
+        await movie.destroy()
+
+        return null
+    }
+
+    catch (error) {
+        console.log(error);
+        return res.status(error.status || 500).json({
+            ok: false,
+            status: error.status || 500,
+            message: error.message || 'upss, error'
+        })
+    }
+}
 module.exports = {
     getAllMovies,
     getMovieById,
-    storeMovie
+    storeMovie,
+    updateMovie,
+    deleteMovie
 }

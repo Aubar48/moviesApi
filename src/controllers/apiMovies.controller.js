@@ -1,4 +1,4 @@
-const { getAllMovies, getMovieById } = require("../services/movies.services")
+const { getAllMovies, getMovieById, updateMovie, deleteMovie } = require("../services/movies.services")
 const paginate = require('express-paginate')
 const createError = require('http-errors')
 module.exports = {
@@ -16,7 +16,12 @@ module.exports = {
                     currentPage,
                     pages
                 },
-                data: movies
+                data: movies.map(movie => {
+                    return {
+                        ...movie.dataValues,
+                        url: `${req.protocol}://${req.get('host')}/api/v1/movies/${movie.id}`
+                    }
+                })
             })
         } catch (error) {
             console.log(error);
@@ -71,10 +76,38 @@ module.exports = {
             })
         }
     },
-    update: (req, res) => {
+    update: async (req, res) => {
+        try {
+            const movieUpdate = await updateMovie(req.params.id, req.body)
 
+            return res.status(200).json({
+                ok: true,
+                message: 'Película actualizada',
+                data: movieUpdate
+            })
+        } catch (error) {
+            console.log(error);
+            return res.status(error.status || 500).json({
+                ok: false,
+                status: error.status || 500,
+                message: error.message || 'upss, error'
+            })
+        }
     },
-    delete: (req, res) => {
-
+    delete: async (req, res) => {
+        try {
+            await deleteMovie(req.params.id)
+            return res.status(200).json({
+                ok: true,
+                message: 'Película eliminada correctamente'
+            })
+        } catch (error) {
+            console.log(error);
+            return res.status(error.status || 500).json({
+                ok: false,
+                status: error.status || 500,
+                message: error.message || 'upss, error'
+            })
+        }
     },
 }
