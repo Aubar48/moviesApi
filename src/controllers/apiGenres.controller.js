@@ -1,12 +1,14 @@
 const { getAllGenres } = require("../services/genres.services")
-
+const db = require('../database/models')
 module.exports = {
-
     index: async (req, res) => {
         try {
-            const genres = await getAllGenres()
+            const { genres } = await getAllGenres()
             return res.status(200).json({
                 ok: true,
+                meta: {
+                    total: genres.length
+                },
                 data: genres
             })
         } catch (error) {
@@ -18,8 +20,6 @@ module.exports = {
             })
         }
     },
-    show: (req, res) => {
-
+    show: async (req, res) => {
     }
-
 }

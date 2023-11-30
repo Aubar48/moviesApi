@@ -30,7 +30,9 @@ const getAllMovies = async (limit, offset, keyword) => {
             ],
             ...options
         })
-        const count = await db.Movie.count()
+        const count = await db.Movie.count({
+            ...options
+        })
         console.log(count);
         return {
             movies,
