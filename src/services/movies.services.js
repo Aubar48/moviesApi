@@ -1,6 +1,13 @@
 const db = require("../database/models")
-const getAllMovies = async (limit, offset) => {
-
+const { Op } = require("sequelize");
+const getAllMovies = async (limit, offset, keyword) => {
+    const options = keyword ? {
+        where: {
+            title: {
+                [Op.substring]: keyword
+            },
+        }
+    } : null
     try {
         const movies = await db.Movie.findAll({
             limit,
@@ -8,7 +15,7 @@ const getAllMovies = async (limit, offset) => {
             attributes: {
                 exclude: ['created_at', 'updated_at']
             },
-            incluide: [
+            include: [
                 {
                     association: 'genre',
                     attributes: ['id', 'name']
@@ -21,6 +28,7 @@ const getAllMovies = async (limit, offset) => {
                     }
                 }
             ],
+            ...options
         })
         const count = await db.Movie.count()
         console.log(count);
@@ -49,7 +57,7 @@ const getMovieById = async (id) => {
             attributes: {
                 exclude: ['created_at', 'updated_at']
             },
-            incluide: [
+            include: [
                 {
                     association: 'genre',
                     attributes: ['id', 'name']
@@ -108,7 +116,7 @@ const updateMovie = async (id, dataMovie) => {
         const { title, awards, rating, length, release_date, genre_id, actors } = dataMovie
         const movie = await db.Movie.findByPk(id, {
             attributes: ["id", "title", "awards", "rating", "length", "release_date"],
-            incluide: [
+            include: [
                 {
                     association: 'genre',
                     attributes: ['id', 'name']
@@ -173,25 +181,20 @@ const deleteMovie = async (id) => {
             throw {
                 status: 404,
                 message: 'Id corrupto'
-
             }
         }
-
         const movie = await db.Movie.findByPk(id)
-
         if (!movie) {
             throw {
                 status: 404,
                 message: 'No hay una peliculas con ese Id'
             }
         }
-
         await db.Actor_Movie.destroy({
             where: {
                 movie_id: id
             }
         })
-
         await db.Actor.update(
             {
                 favorite_movie_id: null
@@ -202,12 +205,9 @@ const deleteMovie = async (id) => {
                 }
             }
         )
-
         await movie.destroy()
-
         return null
     }
-
     catch (error) {
         console.log(error);
         return res.status(error.status || 500).json({
