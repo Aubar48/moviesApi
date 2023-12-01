@@ -68,7 +68,8 @@ module.exports = {
             return res.status(200).json({
                 ok: true,
                 message: 'pelicula agregada con exito',
-                url: `${req.protocol}://${req.get('host')}/api/v1/movies/${movie.id}`
+                url: `${req.protocol}://${req.get('host')}/api/v1/movies/${movie.id}`,
+                data: movie
             })
         } catch (error) {
             console.log(error);
